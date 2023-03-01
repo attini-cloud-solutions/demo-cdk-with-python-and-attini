@@ -1,0 +1,25 @@
+distributionName: demo-cdk-with-python-and-attini
+
+package:
+  container:
+    image: public.ecr.aws/attini/attini-labs:python-cdk
+    loginCommands:
+      - aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws
+    options:
+      - --env PYTHONPATH="${PYTHONPATH}:$(pwd)"
+  prePackage:
+    commands:
+      # If $GITHUB_SHA is available (build is running with GitHub actions)
+      # set the deployment (distribution) id to $GITHUB_SHA.
+      # Otherwise, create a moc test ID
+      - |
+          [[ -z $GITHUB_SHA ]] && GITHUB_SHA=$(date +%s)-test-id 
+          attini configure set-dist-id --id $GITHUB_SHA
+
+      # Synthesizes the deployment plan, this template has to be environment agnostic
+      - cdk synth --app "python3 deployment_plan/deployment_plan.py" > deployment-plan.yaml
+
+initDeployConfig:
+  template: deployment-plan.yaml
+  stackName: ${environment}-${distributionName}-deployment-plan
+

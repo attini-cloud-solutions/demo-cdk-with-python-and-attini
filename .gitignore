@@ -127,3 +127,8 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+cdk.out/
+attini_dist/
+.venv/
+.idea
