@@ -4,6 +4,7 @@ from attini_cdk import (
     AttiniRunnerJob,
     AttiniLambdaInvoke,
     DeploymentPlan,
+    AttiniPayload
 )
 
 from constructs import Construct
@@ -25,10 +26,8 @@ class DeploymentPlanStack(AttiniDeploymentPlanStack):
                                    )
 
         is_dev_condition = sfn.Condition.string_equals(
-            "$.environment", "dev"
+            AttiniPayload.ENVIRONMENT_PATH, "dev"
         )
-
-        run_load_test_choice = sfn.Choice(self, "is_dev?")
 
         create_test_data = AttiniLambdaInvoke(self, "load_test_data_into_database",
                                               function_name=deploy_cdk_app.get_output(
@@ -38,22 +37,24 @@ class DeploymentPlanStack(AttiniDeploymentPlanStack):
 
         run_load_test = AttiniRunnerJob(self, 'run_load_test',
                                         environment={
-                                            "URL":
-                                                deploy_cdk_app.get_outputh(
-                                                    hello_world_stack.artifact_id,
-                                                    hello_world_stack.function_url
-                                                )
+                                            "URL": deploy_cdk_app.get_output(
+                                                        hello_world_stack.artifact_id,
+                                                        hello_world_stack.function_url
+                                                    )
                                         },
                                         commands=[
                                             "bash ./deployment_plan/load-test.sh"
                                         ])
 
+        load_test_branch = create_test_data.next(run_load_test)
+
         success = sfn.Succeed(self, "success")
 
         DeploymentPlan(self, "deployment_plan",
                        definition=deploy_cdk_app.next(
-                           run_load_test_choice.when(is_dev_condition, create_test_data.next(run_load_test)).otherwise(
-                               success))
+                           sfn.Choice(self, "should_run_load_test?")
+                           .when(is_dev_condition, load_test_branch)
+                           .otherwise(success))
                        )
 
 
