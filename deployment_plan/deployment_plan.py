@@ -3,7 +3,7 @@ from attini_cdk import (
     AttiniCdk,
     AttiniRunnerJob,
     AttiniLambdaInvoke,
-    DeploymentPlan
+    DeploymentPlan,
 )
 
 from constructs import Construct
@@ -21,10 +21,8 @@ class DeploymentPlanStack(AttiniDeploymentPlanStack):
         sfn = cdk.aws_stepfunctions
 
         deploy_cdk_app = AttiniCdk(self, "deploy_cdk_app",
-                                   path="./",
-                                   environment={
-                                       "ENV": sfn.JsonPath.string_at("$.environment")
-                                   })
+                                   path="./"
+                                   )
 
         is_dev_condition = sfn.Condition.string_equals(
             "$.environment", "dev"
@@ -33,21 +31,18 @@ class DeploymentPlanStack(AttiniDeploymentPlanStack):
         run_load_test_choice = sfn.Choice(self, "is_dev?")
 
         create_test_data = AttiniLambdaInvoke(self, "load_test_data_into_database",
-                                              function_name=sfn.JsonPath.string_at(
-                                                  deploy_cdk_app.get_output_path(
-                                                      hello_world_stack.artifact_id,
-                                                      hello_world_stack.load_test_data_function_name
-                                                  )
+                                              function_name=deploy_cdk_app.get_output(
+                                                  hello_world_stack.artifact_id,
+                                                  hello_world_stack.load_test_data_function_name
                                               ))
 
         run_load_test = AttiniRunnerJob(self, 'run_load_test',
                                         environment={
-                                            "URL": sfn.JsonPath.string_at(
-                                                deploy_cdk_app.get_output_path(
+                                            "URL":
+                                                deploy_cdk_app.get_outputh(
                                                     hello_world_stack.artifact_id,
                                                     hello_world_stack.function_url
                                                 )
-                                            )
                                         },
                                         commands=[
                                             "bash ./deployment_plan/load-test.sh"
@@ -57,7 +52,8 @@ class DeploymentPlanStack(AttiniDeploymentPlanStack):
 
         DeploymentPlan(self, "deployment_plan",
                        definition=deploy_cdk_app.next(
-                           run_load_test_choice.when(is_dev_condition, create_test_data.next(run_load_test)).otherwise(success))
+                           run_load_test_choice.when(is_dev_condition, create_test_data.next(run_load_test)).otherwise(
+                               success))
                        )
 
 
