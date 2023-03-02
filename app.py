@@ -1,10 +1,7 @@
 #!/usr/bin/env python3
 import os
-
 import aws_cdk as cdk
-
 from attini_cdk import AttiniRuntimeVariables
-
 from infrastructure.cdk_project_stack import CdkProjectStack
 
 app = cdk.App()

@@ -6,10 +6,8 @@ from attini_cdk import (
     DeploymentPlan,
     AttiniPayload
 )
-
 from constructs import Construct
 import aws_cdk as cdk
-
 import app as hello_world_app
 
 
