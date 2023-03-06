@@ -2,7 +2,7 @@ distributionName: demo-cdk-with-python-and-attini
 
 package:
   container:
-    image: public.ecr.aws/attini/attini-labs:python-cdk
+    image: public.ecr.aws/attini/attini-labs:python-cdk-$(uname -m)
     loginCommands:
       - aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws
     options:
